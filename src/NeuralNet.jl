@@ -9,14 +9,14 @@ struct Network2
 end 
 
 sizes=[1,2,3]
-
 biases=[rand(y, 1) for y in sizes[1:end]]
 weights=[rand(y, x) for (x,y) in zip(sizes[], sizes[])]
 
-
 function sigmoid(z)
     return 1.0/(1.0+exp(-z))
+end 
 
 function feedforward(a,net::Network1)
     return sigmoid.(a.*net.weights+net.biases)
+end 
 

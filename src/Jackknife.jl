@@ -7,6 +7,8 @@ Description:
 
 """
 
+##TODO: somehow need to enforce the sort of function to be inputed 
+
 function blocking(X::Vector,number_per_block::Int)::Vector
 
     """
@@ -26,57 +28,57 @@ end
 ## TODO: n dimensional jackknife method
 ## TODO: improve performance of jackknife (parallelize jackknife)
 
-function stupid_jackknife(experiment::Function,f::Function,S::Function,Ns::Array)
+# function stupid_jackknife(experiment::Function,f::Function,S::Function,Ns::Array)
 
-    """
+#     """
 
-    jackknife(experiment::Array{Float64,1}, f)::(Float64,Float64)
+#     jackknife(experiment::Array{Float64,1}, f)::(Float64,Float64)
 
-    Calculates the expectation value and error for some function f of some experiment where f is a function and the results 
-    of the experiment are represented by an array of floats.
+#     Calculates the expectation value and error for some function f of some experiment where f is a function and the results 
+#     of the experiment are represented by an array of floats.
 
-    Examples
-    ≡≡≡≡≡≡≡≡≡≡
+#     Examples
+#     ≡≡≡≡≡≡≡≡≡≡
 
-    julia> f(x)=x
-    julia> jackknife([1,2,3],f)
+#     julia> f(x)=x
+#     julia> jackknife([1,2,3],f)
     
-    2,1
+#     2,1
 
-    """
+#     """
 
-    l=length(Ns)
-    experiments=zeros(length(Ns))
-    θ=zeros(length(Ns))
+#     l=length(Ns)
+#     experiments=zeros(length(Ns))
+#     θ=zeros(length(Ns))
 
-    for n in 1:l
-        experiments[n]=1/Ns[n]*sum(f.(experiment(ϵ,xmin,xmax,Ns[n],S)))
-    end 
+#     for n in 1:l
+#         experiments[n]=1/Ns[n]*sum(f.(experiment(ϵ,xmin,xmax,Ns[n],S)))
+#     end 
 
-    jack_matrix=zeros((l,l))
+#     jack_matrix=zeros((l,l))
 
-    for n in 1:l
-        for m in 1:l
-            if n==m
-                jack_matrix[n,m]=0
-            else 
-            jack_matrix[m,n]=experiments[n]
-            end 
-        end 
-    end 
+#     for n in 1:l
+#         for m in 1:l
+#             if n==m
+#                 jack_matrix[n,m]=0
+#             else 
+#             jack_matrix[m,n]=experiments[n]
+#             end 
+#         end 
+#     end 
 
-    for row in 1:l
-        θ[row]=sum(jack_matrix[row,:])/(l-1)
-    end 
+#     for row in 1:l
+#         θ[row]=sum(jack_matrix[row,:])/(l-1)
+#     end 
 
-    θ̄=sum(experiments)/l
-    Δθ=sqrt((l-1)/(l)*sum((θ.-θ̄).^2))
+#     θ̄=sum(experiments)/l
+#     Δθ=sqrt((l-1)/(l)*sum((θ.-θ̄).^2))
 
-    return  θ̄,Δθ
-end 
+#     return  θ̄,Δθ
+# end 
 
 # f input returns a scalar
-function jackknife(experiment::Array{Float64,1}, f::Function)
+function jackknife(experiment::Array{Real,1}, f::Function)
     """
 
     jackknife(experiment::Array{Float64,1}, f::Function{Float64})
@@ -105,9 +107,8 @@ function jackknife(experiment::Array{Float64,1}, f::Function)
     return θ̄,Δθ
 end 
 
-
-# for this function , f returns a vector not a scalar
-function jackknife(experiment::Array{Float64,1}, f::Function)
+## jackknife for vmc, when the experiment is parametrized not just by experiment varaiable but others 
+function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function,extraargs::Tuple)
     """
 
     jackknife(experiment::Array{Float64,1}, f::Function{Vector})
@@ -128,16 +129,20 @@ function jackknife(experiment::Array{Float64,1}, f::Function)
 
     l=length(experiment)
     θᵢ=zeros(l)
-    for i in 1:l 
-        θᵢ[i]=1/(l-1)*sum(f([experiment[1:i-1];experiment[i+1:l]]))
+    @inbounds for i in 1:l 
+        experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
+        sum_=0
+        @inbounds for i in 1:l-1
+            sum_+=f([experiment_subset[i];θ],extraargs...)
+        end 
+        θᵢ[i]=1/(l-1)*sum_
     end 
     θ̄=sum(θᵢ)/l
     Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))
     return θ̄,Δθ
 end 
 
-
-function jackknife(experiment::Array{Float64,1})
+function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function)
     """
 
     jackknife(experiment::Array{Float64,1}, f::Function{Vector})
@@ -158,8 +163,13 @@ function jackknife(experiment::Array{Float64,1})
 
     l=length(experiment)
     θᵢ=zeros(l)
-    for i in 1:l 
-        θᵢ[i]=1/(l-1)*sum([experiment[1:i-1];experiment[i+1:l]])
+    @inbounds for i in 1:l 
+        experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
+        sum_=0
+        @inbounds for i in 1:l-1
+            sum_+=f([experiment_subset[i];θ],extraargs...)
+        end 
+        θᵢ[i]=1/(l-1)*sum_
     end 
     θ̄=sum(θᵢ)/l
     Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))

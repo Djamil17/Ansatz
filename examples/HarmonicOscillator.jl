@@ -10,9 +10,7 @@ Description:
 ## TODO : double derivative gradient
 ## TODO: AD gradient where a variable is retained  
 
-using Plots
-using QuadGK
-using CalculusWithJulia
+using Plots,QuadGK, CalculusWithJulia
 
 include("MetropolisHastings.jl")
 include("Jackknife.jl")

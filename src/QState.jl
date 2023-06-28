@@ -1,5 +1,4 @@
 """
-
 Description: 
 
 defines the data structures necessary for arbitrary dimensional ansatz problem 
@@ -39,22 +38,11 @@ struct Θ{T<:Real} <: AbstractΘ{T} ##
     θ::Vector{T}
 end 
 
-# struct Θ{T<:Complex} <: AbstractΘ{T} ## 
-#     θ::Vector{T}
-# end 
-
 struct QParams{T<:Real} <: AbstractQParams{T}
     n::Int ## number of spatial dimensions
     𝐫::Ω{T}
     Θ::Θ{T}
 end 
-
-# mutable struct MutQParams{T<:Real} <: AbstractQParams{T}
-#     n::Int ## number of spatial dimensions
-#     m::Int ## number of non-spatial paramters
-#     𝐫::Ω{T}
-#     Θ::Θ{T}
-# end 
 
 mutable struct MutQParams{T<:Real} <: AbstractQParams{T}
     n::Int ## number of spatial dimensions
@@ -65,4 +53,9 @@ end
 
 # Base.show(io::IO, z::Polar) = print(io, z.r, " * exp(", z.Θ, "im)")
 
+# struct VmcProblem{T<:}
+#     Ω
+#     Ĥ
+#     ψ::Function
+# end 
 

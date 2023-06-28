@@ -14,8 +14,7 @@ Description:
 # TODO: implement full blown mcmc with metropolis
 ## TODO: optimize code , devectorize
 
-using Random 
-using Distributions
+using Random , Distributions
 
 function metropolis_hastings(ϵ::Float64,xmin::Number,xmax::Number,iterations::Int64,P::Function)
     """
@@ -87,6 +86,7 @@ function metropolis_hastings(ϵ::Float64,xmin::Float64,xmax::Float64,iterations:
     return X
 end 
 
+
 function metropolis_hastings(n::Number,ϵ::Float64,xmin::Float64,xmax::Float64,iterations::Int64,θ::Vector,P::Function)
     """
 
@@ -123,6 +123,40 @@ function metropolis_hastings(n::Number,ϵ::Float64,xmin::Float64,xmax::Float64,i
 end 
 
 
+function metropolis_hastings(ϵ::Float32,xmin::Float32,xmax::Float32,iterations::Int64,P::Function)
+    """
+
+    metropolis_hastings(ϵ::Float64,xmin::Float64,xmax::Float64,iterations::Int64,P::Function)::Array{Float64}
+    
+
+    Examples
+    ≡≡≡≡≡≡≡≡≡≡
+
+    julia> f(x::Real)=ℯ^-x^2
+    julia> metropolis_hastings(.1, -2.0,-1.0,10000,f)
+    
+
+    """
+
+    i=1
+    X=zeros(iterations)
+    x₀=rand(Uniform(xmin,xmax))
+    X[i]=x₀
+    while i<iterations
+        ζ=rand(Uniform(-ϵ,ϵ))
+        u=rand()
+        x₁=x₀+ζ
+        if P([x₁][1])/P([x₀][1])>=u
+            x₀=x₁
+        else
+            x₀=x₀
+        end 
+        i+=1 
+        X[i]=x₀
+        
+    end 
+    return X
+end 
 
 # function adaptive_metropolis_hastings(ϵ::Float64,xmin::Float64,xmax::Float64,iterations::Int64,P::Function,sample_adapt::Integer,adaptance_rate::Float64)
 #     """

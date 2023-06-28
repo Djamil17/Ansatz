@@ -47,7 +47,6 @@ function gradient_descent(objective::Function, θ::Float64, η::Float64 ,iterati
 
 end 
 
-
 function gradient_descent(objective::Function, θ::Array{Float64,1}, η::Float64 ,iterations::Int64,tolerance::Float64)::Vector
 
     """

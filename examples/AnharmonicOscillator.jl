@@ -6,8 +6,7 @@ Description:
 
 """
 
-using ForwardDiff
-using StaticArrays 
+using ForwardDiff, StaticArrays 
 import LinearAlgebra:tr,Diagonal
 
 include("MetropolisHastings.jl")

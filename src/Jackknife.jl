@@ -108,7 +108,7 @@ function jackknife(experiment::Array{Real,1}, f::Function)
 end 
 
 ## jackknife for vmc, when the experiment is parametrized not just by experiment varaiable but others 
-function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function,extraargs::Tuple)
+function jackknife(experiment::Vector{T1},θ::Vector{T2},f::T3,extraargs::Tuple)  where {T1<:AbstractFloat,T2<:AbstractFloat,T3<:Function}
     """
 
     jackknife(experiment::Array{Float64,1}, f::Function{Vector})
@@ -142,7 +142,7 @@ function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function,e
     return θ̄,Δθ
 end 
 
-function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function)
+function jackknife(experiment::Vector{T1},θ::Vector{T2},f::T3,extraargs::Any) where {T1<:AbstractFloat,T2<:AbstractFloat,T3<:Function}
     """
 
     jackknife(experiment::Array{Float64,1}, f::Function{Vector})
@@ -167,7 +167,7 @@ function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function)
         experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
         sum_=0
         @inbounds for i in 1:l-1
-            sum_+=f([experiment_subset[i];θ],extraargs...)
+            sum_+=f([experiment_subset[i];θ],extraargs)
         end 
         θᵢ[i]=1/(l-1)*sum_
     end 
@@ -175,3 +175,106 @@ function jackknife(experiment::Vector{Float64},θ::Vector{Float64},f::Function)
     Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))
     return θ̄,Δθ
 end 
+
+function jackknife(experiment::Vector,f::T1) where {T1<:Function}
+    """
+
+    jackknife(experiment::Array{Float64,1}, f::Function{Vector})
+
+    Calculates the expectation value and error for some function f of some experiment where f is a function and the results 
+    of the experiment are represented by an array of floats.
+
+    Examples
+    ≡≡≡≡≡≡≡≡≡≡
+
+    julia> f(x)=x
+    julia> jackknife([1,2,3],f)
+    
+    2,1
+
+
+    """
+
+    l=length(experiment)
+    θᵢ=zeros(l)
+    @inbounds for i in 1:l 
+        experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
+        sum_=0
+        @inbounds for i in 1:l-1
+            sum_+=f([experiment_subset[i]])[1]
+        end 
+        θᵢ[i]=1/(l-1)*sum_
+    end 
+    θ̄=sum(θᵢ)/l
+    Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))
+    return θ̄,Δθ
+end 
+
+function jackknife(experiment::Vector{T1},f::T2,extraargs::Any) where {T1<:AbstractFloat,T2<:Function}
+    """
+
+    jackknife(experiment::Array{Float64,1}, f::Function{Vector})
+
+    Calculates the expectation value and error for some function f of some experiment where f is a function and the results 
+    of the experiment are represented by an array of floats.
+
+    Examples
+    ≡≡≡≡≡≡≡≡≡≡
+
+    julia> f(x)=x
+    julia> jackknife([1,2,3],f)
+    
+    2,1
+
+
+    """
+
+    l=length(experiment)
+    θᵢ=zeros(l)
+    @inbounds for i in 1:l 
+        experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
+        sum_=0
+        @inbounds for i in 1:l-1
+            sum_+=f([experiment_subset[i]],extraargs)[1]
+        end 
+        θᵢ[i]=1/(l-1)*sum_
+    end 
+    θ̄=sum(θᵢ)/l
+    Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))
+    return θ̄,Δθ
+end
+
+
+function jackknife(experiment::Vector{Vector{T1}},f::T2,extraargs::Any) where {T1<:AbstractFloat,T2<:Function}
+    """
+
+    jackknife(experiment::Array{Float64,1}, f::Function{Vector})
+
+    Calculates the expectation value and error for some function f of some experiment where f is a function and the results 
+    of the experiment are represented by an array of floats.
+
+    Examples
+    ≡≡≡≡≡≡≡≡≡≡
+
+    julia> f(x)=x
+    julia> jackknife([1,2,3],f)
+    
+    2,1
+
+
+    """
+
+    l=length(experiment)
+    θᵢ=zeros(l)
+    @inbounds for i in 1:l 
+        experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
+        sum_=0
+        @inbounds for i in 1:l-1
+            sum_+=f([experiment_subset[i]],extraargs...)[1]
+        end 
+        θᵢ[i]=1/(l-1)*sum_
+    end 
+    θ̄=sum(θᵢ)/l
+    Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))
+    return θ̄,Δθ
+end

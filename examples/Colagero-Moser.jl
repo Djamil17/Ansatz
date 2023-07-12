@@ -24,6 +24,13 @@ epochs=1000f0
 Ω=η/epochs
 α=-0.5f0 
 
+function (m::NeuralAnsatz)(x)
+   
+    return exp.(Ω*m.chain(sort(x)).+α*(x[1].^2 .+x[2].^2))
+end
+
+Flux.@functor NeuralAnsatz
+
 function buildϕ(particleN::T) where {T<:Integer}
 
     header="g^2*a^2*("
@@ -43,13 +50,6 @@ function buildϕ(particleN::T) where {T<:Integer}
     return @eval(x -> $(Meta.parse(chainString)))
 end 
 
-function (m::NeuralAnsatz)(x)
-   
-    return exp.(Ω*m.chain(sort(x)).+α*(x[1].^2 .+x[2].^2))
-end
-
-Flux.@functor NeuralAnsatz
-
 chain = Chain(Dense(2, 5,celu),Dense(5, 1,celu))
 Ψ = NeuralAnsatz(chain)
 
@@ -62,8 +62,6 @@ opt=Adam(η)
 Θ=Flux.params(Ψ)
 train!(n_particles,epochs,ϵ₀,xmin,xmax,N,Ψ,Ĥ,ε₀,Θ,opt)
 jackknife(metropolis_hastings(n_particles, ϵ,xmin1,xmax1,1000,x->sum(Ψ(x).^2)),ε₀,Ψ)
-
-
 
 function main()
     val=[]

@@ -16,32 +16,30 @@ end
 
 Ansatz=NeuralNetOrFunction=Union{NeuralAnsatz,Function}
 
-struct vmcProblem{T1<:AbstractFloat,T2<:Integer}
-    Ω::Domain{T1}
-    ψ::Ansatz
-    width::T2
-    depth::T2
-    ϕ
-    σ
-    particle_type
+##TODO : implement pretty print 
+
+@enum SpatialDimension begin
+    one_d=1::Integer
+    two_d=2::Integer
+    three_d=3::Integer
+end
+
+Base.@kwdef struct vmcProblem{T1<:Any,T2<:Integer,T4<:Function}
+    Ω::T1 ## where the system is 
+    particle_number::T2
+    spatial_dimension::SpatialDimension
+    ϕ::T4 ## potential of the system 
 end 
 
-function buildVmcProblem(Ω::Domain, ψ::Ansatz, width::T2, depth::T2, ϕ::T3, σ::T4,particle_num::T5, particle_type::T6) where {T2<:Integer,T3<:Function,T5<:Integer,T6<:Integer }
-    
-    function (m::NeuralAnsatz)(x)
-   
-        return exp.(m.chain(x))*Ψ
-    end 
-    
-    Flux.@functor NeuralAnsatz
+Base.@kwdef struct vmcSolution{T1<:Integer,T2<:AbstractFloat,T3<:Integer,T5<:AbstractFloat,T7<:Union{Tuple{},Tuple{Any}}}
+    ψ::Ansatz ## give a neural net or function
+    epoch::T1
+    distribution
+    ϵ::T2
+    N::T3
+    opt
+    η::T5
+    hyperparameters::T7=()
 
-    chain=buildChain(particle_num,width,depth,σ)
-    Ψ=NeuralAnsatz(chain)
-
-    return vmcProblem(Ω,ψ,width,depth,ϕ,σ,particle_type)
+    ## check that the distribution field is a distribution
 end 
-
-
-
-
-

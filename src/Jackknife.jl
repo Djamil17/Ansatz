@@ -109,7 +109,7 @@ julia> jackknife([1,2,3],f)
 
 
 """
-function jackknife(experiment::Vector{T1},θ::Vector{T2},f::T3,extraargs::Any) where {T1<:AbstractFloat,T2<:AbstractFloat,T3<:Function}
+function jackknife(experiment::Vector{Vector{T1}},f::T2,extraargs::Any) where {T1<:AbstractFloat,T2<:Function}
 
     l=length(experiment)
     θᵢ=zeros(l)
@@ -117,7 +117,7 @@ function jackknife(experiment::Vector{T1},θ::Vector{T2},f::T3,extraargs::Any) w
         experiment_subset=[@view experiment[1:i-1];@view experiment[i+1:l]]
         sum_=0
         @fastmath @inbounds @simd for i in 1:l-1
-            sum_+=f([experiment_subset[i];θ],extraargs)
+            sum_+=f(experiment_subset[i],extraargs)[1]
         end 
         θᵢ[i]=1/(l-1)*sum_
     end 
@@ -144,12 +144,12 @@ julia> jackknife([1,2,3],f)
 
 
 """
-function jackknife(experiment::Vector{T1},f::T2) where {T1<:AbstractFloat,T2<:Function}
+function jackknife(experiment::Vector{Vector{T1}},f::T2) where {T1<:AbstractFloat,T2<:Function}
 
     l=length(experiment)
     θᵢ=zeros(l)
     @fastmath @inbounds @simd for i in 1:l 
-        experiment_subset=[experiment[1:i-1];experiment[i+1:l]]
+        experiment_subset=[@view experiment[1:i-1];@view experiment[i+1:l]]
         sum_=0
         @fastmath @inbounds @simd for i in 1:l-1
             sum_+=f([experiment_subset[i]])[1]
@@ -160,10 +160,3 @@ function jackknife(experiment::Vector{T1},f::T2) where {T1<:AbstractFloat,T2<:Fu
     Δθ=sqrt((l-1)/(l)*sum((θᵢ.-θ̄).^2))
     return θ̄,Δθ
 end 
-
-
-
-ψ(𝐱)=exp(-1/2*𝐱[1]^2)
-ϕ(𝐱::Vector{T}) where {T<:AbstractFloat}=1/2*𝐱[1]^2+λ*𝐱[1]^4
-Ĥ(𝐱::Vector{T1}, ψ::T2) where {T1<:AbstractFloat,T2<:Union{NeuralAnsatz,Function}}=-∇²(ψ,𝐱)/2 .+ϕ(𝐱)*ψ(𝐱)
-ε₀(𝐱::T1,ψ::T2) where {T1<:AbstractFloat,T2<:Union{NeuralAnsatz,Function}}=ψ(𝐱).^-1 .*Ĥ(𝐱,ψ)

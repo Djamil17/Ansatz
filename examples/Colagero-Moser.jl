@@ -6,32 +6,26 @@ Description:
 
 """
 
-include("../src/NeuralNetAnsatz.jl")
+include("../src/VmcProblem.jl")
 
 const g=1.0f00
 const a=1.0f00
+const boundary=(-.50f0,.50f0)
 
-η=.001f0
-N=100
-ϵ₀=.5
-xmin=-1.0
-xmax=1.0
-n_particles=2
-
-Θ=Flux.params(Ψ)
-epochs=1000f0
-
-Ω=η/epochs
+Ω=1f-3
+particle_number=2
+ϵ=1.50f0
+samples=100
+width=100
+depth=1
+output=1
+η=.0001f0
 α=-0.5f0 
+ω=1
 
-function (m::NeuralAnsatz)(x)
-   
-    return exp.(Ω*m.chain(sort(x)).+α*(x[1].^2 .+x[2].^2))
-end
+Eₖ(k,N)=ω*(k+N/2+N*(N-1)/2*(1/2*(1+2*g^2)^(1/2)+1/2))
 
-Flux.@functor NeuralAnsatz
-
-function buildϕ(particleN::T) where {T<:Integer}
+function buildϕ(particleN::T1,interparticle_force::String="sinh") where {T1<:Integer}
 
     header="g^2*a^2*("
     closing=")"
@@ -39,41 +33,46 @@ function buildϕ(particleN::T) where {T<:Integer}
     for i in 1:particleN, j in 1:particleN
         if i!=j && i>j 
             if i==particleN && j==particleN-1
-            middleString*="sinh.(a*(x[$i]-x[$j])).^-2"
+            middleString*="$interparticle_force.(a*(x[$i]-x[$j])).^-2"
             else 
-            middleString*="sinh.(a*(x[$i]-x[$j])).^-2 + "
+            middleString*="$interparticle_force.(a*(x[$i]-x[$j])).^-2 + "
             end 
         end 
     end 
 
     chainString=header*middleString*closing
     return @eval(x -> $(Meta.parse(chainString)))
+end
+
+function NewtonGirard(v)  
+    degrees=length(v)
+    return [[x^degree for degree in 1:degrees] for x in v] |> sum
 end 
 
-chain = Chain(Dense(2, 5,celu),Dense(5, 1,celu))
-Ψ = NeuralAnsatz(chain)
+# ϕ=buildϕ(2)
 
-ϕ(𝐱::Vector)=g^2*a^2*sinh.(a*(𝐱[2]-𝐱[1])).^-2
-Ĥ(𝐱::Vector, ψ::NeuralAnsatz)=-∇²(ψ,𝐱)/2 .+ϕ(𝐱)*ψ(𝐱)
-ε₀(𝐱::Vector,ψ::NeuralAnsatz)=ψ(𝐱).^-1 .*Ĥ(𝐱,ψ)
+ϕ(𝐱::Vector{T1}) where {T1<:AbstractFloat}= .05f0*ω*(𝐱[1].^2 + 𝐱[2].^2)+g^2*(𝐱[1]-𝐱[2]).^-2
 
-opt=Adam(η)
+function (m::NeuralAnsatz)(x)
+        
+    return exp.(Ω* m.chain(sort(x)).+α*(x[1].^2 .+x[2].^2))
+end
 
-Θ=Flux.params(Ψ)
-train!(n_particles,epochs,ϵ₀,xmin,xmax,N,Ψ,Ĥ,ε₀,Θ,opt)
-jackknife(metropolis_hastings(n_particles, ϵ,xmin1,xmax1,1000,x->sum(Ψ(x).^2)),ε₀,Ψ)
+Flux.@functor NeuralAnsatz
 
 function main()
-    val=[]
-    for epoch in [10,100,2000,5000]
-        Ω=η/epoch
-        chain = Chain(Dense(2, 5,celu),Dense(5, 1,celu))
-        Ψ = NeuralAnsatz(chain)
-        Θ=Flux.params(Ψ)
-        train!(n_particles,epoch,ϵ₀,xmin,xmax,N,Ψ,Ĥ,ε₀,Θ,opt)
-        push!(val,Tuple(jackknife(metropolis_hastings(n_particles, ϵ,xmin1,xmax1,1000,x->sum(Ψ(x).^2)),ε₀,Ψ)))
+    info=[]
+    for epoch in [1,10,100,200,500]
+        ansatz=buildNeuralNetAnsatz(particle_number,width,depth,output,relu)
+        vmc_problem=vmcProblem(Ω=boundary,particle_number=particle_number,spatial_dimension=one_d,ϕ=ϕ)
+        vmc_solution=vmcSolution(ψ=ansatz ,epoch=epoch,distribution=Uniform,ϵ=ϵ,N=samples,opt=Adam,η=η)
+        @time E₀=runVmcProblem(vmc_problem,vmc_solution,Ē,(vmc_solution.ψ,))
+        push!(info,(E₀))
     end
-    return val
+    return info
 end 
 
+@show Eₖ(0,2)
 info=main()
+
+
